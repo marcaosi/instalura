@@ -19,7 +19,7 @@ export default class Timeline extends Component {
         return (
         <div className="fotos container">
           {
-              this.state.fotos.map(foto => <Foto foto={foto} />)
+              this.state.fotos.map(foto => <Foto key={foto.id} foto={foto} />)
           }
         </div>            
         );

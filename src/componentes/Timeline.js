@@ -26,7 +26,7 @@ export default class Timeline extends Component {
     }
 
     componentWillReceiveProps(nextProps){
-        if(nextProps.login != undefined){
+        if(nextProps.login !== undefined){
             this.carregaFotos(nextProps)
         }
     }

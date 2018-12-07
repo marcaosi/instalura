@@ -18,19 +18,43 @@ class FotoAtualizacoes extends Component {
         if(response.ok){
           return response.json()
         }else{
-          throw new Error('n�o foi poss�vel realizar o like da foto.')
+          throw new Error('não foi possível realizar o like da foto.')
         }
       }).then(liker => {
         this.setState({likeada:!this.state.likeada})
         Pubsub.publish('atualiza-liker', {fotoId:this.props.foto.id, liker})
       })
   }
+
+  comenta(event){
+    event.preventDefault()
+
+    const requestInfo = {
+      method:'post',
+      body:JSON.stringify({texto:this.comment.value}),
+      headers:new Headers({
+        'Content-type':'application/json'
+      })
+    }
+
+    fetch(`https://instalura-api.herokuapp.com/api/fotos/${this.props.foto.id}/comment?X-AUTH-TOKEN=${localStorage.getItem('auth-token')}`, requestInfo)
+      .then(response => {
+        if(response.ok){
+          return response.json()
+        }else{
+          throw new Error('Não possível realizar o comentário.')
+        }
+      }).then(newComment => {
+        Pubsub.publish('newComment', {fotoId:this.props.foto.id, newComment})
+      })
+  }
+
   render(){
       return (
           <section className="fotoAtualizacoes">
             <a onClick={this.like.bind(this)} className={this.state.likeada ? 'fotoAtualizacoes-like-ativo' : 'fotoAtualizacoes-like'}>Likar</a>
-            <form className="fotoAtualizacoes-form">
-              <input type="text" placeholder="Adicione um coment�rio..." className="fotoAtualizacoes-form-campo"/>
+            <form className="fotoAtualizacoes-form" onSubmit={this.comenta.bind(this)}>
+              <input type="text" placeholder="Adicione um comentário..." className="fotoAtualizacoes-form-campo" ref={input => this.comment = input}/>
               <input type="submit" value="Comentar!" className="fotoAtualizacoes-form-submit"/>
             </form>
 
@@ -43,7 +67,7 @@ class FotoInfo extends Component {
 
   constructor(props){
     super(props)
-    this.state = {likers : this.props.foto.likers}
+    this.state = {likers : this.props.foto.likers, comments: this.props.foto.comentarios}
   }
 
   componentWillMount(){
@@ -58,6 +82,13 @@ class FotoInfo extends Component {
           
           this.setState({likers:newLikers})
         }
+      }
+    })
+
+    Pubsub.subscribe('newComment', (topico, newComment) => {
+      if(this.props.foto.id === newComment.fotoId){
+        const newComments = this.state.comments.concat(newComment.newComment)
+        this.setState({comments:newComments})
       }
     })
   }
@@ -82,7 +113,7 @@ class FotoInfo extends Component {
 
             <ul className="foto-info-comentarios">
             {
-              this.props.foto.comentarios.map(comentario => {
+              this.state.comments.map(comentario => {
                 return <li className="comentario" key={comentario.id}>
                         <Link to={`/timeline/${comentario.login}`} className="foto-info-autor">{comentario.login} </Link>
                         {comentario.texto}
